@@ -4,7 +4,7 @@ const path = require("path");
 const ListEntity = require("../models/ListEntity");
 
 class CuotaController {
-  static async createList(directory) {
+  static async createList(directory, directoryRelativeToHome) {
     try {
       const files = await fs.readdir(directory);
 
@@ -17,9 +17,10 @@ class CuotaController {
       for (let i = 0; i < files.length; ++i) {
         const file = files[i];
         const fullPath = path.join(directory, file);
+        const relativePath = path.join(directoryRelativeToHome, file);
         const stat = await fs.lstat(decodeURIComponent(fullPath));
 
-        list.push(ListEntity.create(file, fullPath, stat));
+        list.push(ListEntity.create(file, relativePath, stat));
       }
 
       return list;
@@ -41,14 +42,17 @@ class CuotaController {
       const isFile = stats.isFile();
 
       if (isFile) {
-        if(request.query.download==="true"){
+        if (request.query.download === "true") {
           response.download(decodedPathRelativeToSystem);
-        }else{
+        } else {
           response.redirect(decodedPathRelativeToHome);
         }
       } else {
         try {
-          const list = await CuotaController.createList(decodedPathRelativeToSystem);
+          const list = await CuotaController.createList(
+            decodedPathRelativeToSystem,
+            decodedPathRelativeToHome
+          );
           response.send({ status: "OK", list });
         } catch (err) {
           response.send({ status: "FAIL", error: err });
